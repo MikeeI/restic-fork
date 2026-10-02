@@ -40,8 +40,8 @@ absolute duration and its share of total runtime are unmeasured here.
   `internal/data/tree_stream.go:204` uses the same pattern for tree loads.
 - [S] `cmd/restic/cmd_forget.go:320` — snapshot removal in the neighbouring command is already
   parallelized.
-- [S] Go specification, map iteration — an entry created during iteration may be skipped, so the
-  current loop can leave subtrees of an added-referenced tree unmarked.
+- [S] `https://go.dev/ref/spec#For_statements` — an entry created during map iteration may be
+  skipped, so the current loop can leave subtrees of an added-referenced tree unmarked.
 
 ## Prior-Art
 

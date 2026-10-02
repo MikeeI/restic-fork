@@ -51,7 +51,8 @@ checked=2026-10-02. Gaps: none; keyword-searching `recover`, `rewrite`, `paralle
 - `https://github.com/restic/restic/issues/2126` — Related/Duplicate; open with labels
   `category: stats` and `category: optimization`. Maintainer comment 2022-08-20 states the same root
   cause ("has to walk the whole tree for each snapshot") and names `StreamTrees` as the direction.
-  Three reporters document runtimes of 81–131 minutes for `restore-size`.
+  Two reporters document `restore-size` runtimes of 81–131 minutes on large repositories; a third
+  reports high CPU and memory usage instead of a runtime.
 - `https://github.com/restic/restic/issues/693` — Related; proposes reading per-snapshot size metadata
   instead of walking trees. Different root cause.
 - `https://github.com/restic/restic/issues/1470` — Related precedent; serial prune traversal was
@@ -81,8 +82,8 @@ for the modes that do not need node paths combined with a mutex-shared statistic
 
 - `go build ./... && go test ./cmd/restic ./internal/walker ./internal/data` → build and existing
   tests pass.
-- `restic stats --json --mode <mode>` for all four modes on one fixture repository → identical field
-  values before and after.
+- `restic stats --json` for `restore-size`, `files-by-contents`, `blobs-per-file`, and `raw-data` on
+  one fixture repository → identical field values before and after.
 - `time restic stats --mode restore-size` on a multi-snapshot fixture → recorded wall time before and
   after.
 
