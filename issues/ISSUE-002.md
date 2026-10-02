@@ -4,7 +4,7 @@ State: Investigating
 Authorized-Work: Not-Selected
 Publication-Target: Not-Selected
 External-Reference: Not published.
-Contribution-Priority: High
+Contribution-Priority: Low
 Root-Cause-Confidence: High
 Finding-Category: Performance
 Created: 2026-10-02
@@ -13,83 +13,70 @@ Source: `upstream/master@5127c4abf921857fde4ae51f566c86028c8c2911`
 
 ## Root-Cause
 
-Root-Cause [S]: `runRecover` resolves referenced trees by loading every tree blob of the repository in
-one serial loop, although the set of trees is fixed before the loop and the loads are independent of
-each other.
+[S] `runRecover` loads indexed tree blobs in a serial loop to collect subtree references.
+[S] Reference marking can insert missing subtree IDs into the map, but insertion does not prove missed recoverable roots.
 
 ## Reach-and-Impact
 
-Reach [S]: every `restic recover` invocation on a repository with tree blobs; the command prints the
-loop size itself (`load %d trees`).
-Impact [S]: wall time is the sum of all per-tree load latencies instead of a bounded fraction of it,
-because no second load overlaps the first.
-Impact [A]: on remote backends the serial round trips are assumed to dominate the command runtime; the
-absolute duration and its share of total runtime are unmeasured here.
+[S] Recovery reaches the scan after index repair when indexed tree blobs exist and prints `load %d trees`.
+[S] Tree loads do not overlap within that loop.
+[S] Metadata caching can avoid remote downloads, and index repair is another potentially substantial command stage.
+[A] The scan's absolute duration and share of complete recovery runtime are unmeasured.
+Review correspondence: P15 was dismissed as an actionable worker-pool recommendation; the mechanism remains Investigating.
 
 ## Evidence
 
-- [S] `cmd/restic/cmd_recover.go:88-111` — `for id := range trees { data.LoadTree(ctx, repo, id) }`
-  loads and decodes exactly one tree per iteration.
-- [S] `cmd/restic/cmd_recover.go:78-83` — `trees` is filled from all tree blobs in the index, so the
-  key set is complete before the loop and does not need to change during it.
-- [S] `internal/data/tree.go:145-151` — one `LoadBlob` per tree: backend/cache read, decryption,
-  optional decompression, JSON decode.
-- [S] `cmd/restic/cmd_recover.go:115` — the same function already uses the parallel
-  `data.ForAllSnapshots`.
-- [S] `internal/restic/parallel.go:56-81` — `ParallelRemove` bounds fan-out with `repo.Connections()`;
-  `internal/data/tree_stream.go:204` uses the same pattern for tree loads.
-- [S] `cmd/restic/cmd_forget.go:320` — snapshot removal in the neighbouring command is already
-  parallelized.
-- [S] `https://go.dev/ref/spec#For_statements` — an entry created during map iteration may be
-  skipped, so the current loop can leave subtrees of an added-referenced tree unmarked.
+- [S] `cmd/restic/cmd_recover.go:78-110`: index-derived tree map, serial loads, subtree marking, and distinct error paths.
+- [S] `cmd/restic/cmd_recover.go:96-102`: blob-load failures are reported and skipped; iterator errors abort recovery.
+- [S] `internal/data/tree.go:145-151`: tree loading processes the blob and constructs its iterator.
+- [S] `internal/repository/repository.go:252-255`: `LoadBlob` cannot decode a missing indexed subtree merely inserted into the map.
+- [S] `internal/backend/cache/backend.go:49-55,94-106`: metadata cache and coalesced downloads weaken a round-trip assumption.
+- [S] `internal/data/tree_stream.go:128,187-230`: trees over 50 MiB use one dedicated huge-tree worker.
+- [S] Go map iteration may omit newly inserted entries: https://go.dev/ref/spec#For_statements.
+  This language rule alone does not establish a recovery correctness defect or a smaller correct root set.
 
 ## Prior-Art
 
-Coverage: issues(open+closed) titles and bodies, PRs(open+closed+merged), file history of
-`cmd/restic/cmd_recover.go`; checked=2026-10-02. Gaps: none for this mechanism; searches for
-`recover`, `restic recover slow`, and `parallel tree loading` returned only unrelated
-recover-from-damage reports.
+Recorded coverage: upstream issue/PR searches and history of `cmd/restic/cmd_recover.go` checked on 2026-10-02.
+Search terms included `recover`, `restic recover slow`, and `parallel tree loading`.
+Gaps: lexical coverage is not exhaustive, and no current workload measurement establishes correction value.
 
-- `https://github.com/restic/restic/issues/22018` — Distinct; `recover` failure report without a
-  loading-performance claim.
-- `https://github.com/restic/restic/issues/5287` — Distinct; closed feature request for `recover`.
-- `https://github.com/restic/restic/issues/1470` — Related precedent; parallelizing a serial
-  traversal was accepted upstream for prune.
+- Distinct: https://github.com/restic/restic/issues/22018 reports recovery failure without this loading-performance mechanism.
+- Distinct: https://github.com/restic/restic/issues/5287 is a closed recovery feature request.
+- Related precedent: https://github.com/restic/restic/issues/1470 concerns parallel traversal.
 
-Contribution fit: New issue or pull request — no thread owns this root cause, the change is bounded to
-one loop, and no active implementation owns it.
+Contribution fit is unresolved; the previous claim of a ready bounded change was too strong.
 
 ## Proposed-Change
 
-Load the fixed tree set with a bounded worker pool (`errgroup` limit `repo.Connections()`), mark
-subtree references under a mutex, and keep the progress counter plus the per-tree non-fatal error
-reporting. Reference marking then no longer depends on map-iteration behavior.
+Defer worker-pool design until profiling separates tree scanning from index repair and other recovery stages.
+Any later design must process the initial indexed IDs and serialize reference publication with explicit lifecycle ownership.
+Do not substitute recursive `StreamTrees` blindly; its scheduling and huge-tree policy differ from this scan.
 
 ## Scope-and-Constraints
 
-- Preserve: root semantics of the documented intent (a tree is a root when nothing references it), the
-  `trees` marks, progress output, `printer.E` per unreadable tree, and the snapshot written afterwards.
-- Exclude: index repair, snapshot creation, and `restore`/`prune` code paths.
-- Cost: worker state only; the reported root set can shrink by entries that the current loop may skip
-  when the map is mutated during iteration.
+- Preserve the recovered root set exactly; a smaller set is not an accepted performance-only outcome.
+- Preserve missing-reference bookkeeping, successful-load progress, diagnostics, and snapshot contents.
+- Preserve non-fatal blob-load failures versus fatal iterator failures.
+- Resolve huge-tree memory, shared-map safety, cancellation, worker draining, and error precedence before implementation.
+- Exclude changes to index repair, snapshot creation, and `restore` or `prune`.
 
 ## Verification
 
-- `go test ./cmd/restic -run TestRecover` → the recovered snapshot contains the same tree structure.
-- Counting test backend around `runRecover` → observed concurrent `LoadBlob` calls for trees and total
-  load count equal to the tree count.
-- Before/after comparison of `found %d unreferenced roots` on one fixture repository → identical or
-  smaller, never larger.
+Planned, not run: profile recovery against a disposable repository with recorded cache state.
+Separate index repair and tree scanning; record indexed IDs, actual loads, concurrency, peak memory, and errors.
+Only an authorized correction would require existing `TestRecover` and a recovery smoke comparison with identical roots.
+No new test or source implementation is part of this ledger update.
 
 ## Publication-Blockers
 
-- No measured wall time on a repository with many trees.
-- No confirmation that upstream prefers a bounded `errgroup` over reusing `data.StreamTrees`.
-- Authorized-Work and Publication-Target not selected.
+- No current profile proving the tree scan dominates recovery.
+- No complete worker-pool memory, cleanup, and error contract.
+- The map-insertion argument does not establish a recovery correctness defect.
+- Authorized-Work and Publication-Target are not selected.
 
 ## Next-Action
 
 Summary: Measure recover tree-load runtime
-Action: Time `restic recover` on a fixture repository with many trees and record tree count, wall
-time, and load concurrency.
-Done-When: the command, environment, counts, and timings are recorded in Evidence.
+Action: Profile recovery on one disposable repository, separating index repair from tree scanning.
+Done-When: command, environment, cache state, stage timings, load counts, memory, and error behavior are recorded.

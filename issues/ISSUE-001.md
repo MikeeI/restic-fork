@@ -4,7 +4,7 @@ State: Investigating
 Authorized-Work: Not-Selected
 Publication-Target: Not-Selected
 External-Reference: Not published.
-Contribution-Priority: Medium
+Contribution-Priority: Low
 Root-Cause-Confidence: High
 Finding-Category: Performance
 Created: 2026-10-02
@@ -13,90 +13,75 @@ Source: `upstream/master@5127c4abf921857fde4ae51f566c86028c8c2911`
 
 ## Root-Cause
 
-Root-Cause [S]: the stats traversal has neither a parallel tree-loading stage nor a skip set for
-already-walked subtrees, so every tree blob is fetched and decoded strictly one at a time and shared
-subtrees are decoded again for each snapshot that references them.
+[S] Stats walks snapshot trees serially and revisits shared subtrees for each snapshot occurrence.
+[S] The source proves repeated loading and decoding, not that remote round trips dominate current runtime.
 
 ## Reach-and-Impact
 
-Reach [S]: `restic stats` in all modes that walk nodes — `restore-size` (default),
-`files-by-contents`, `blobs-per-file` — for every snapshot matching the filter (default: all
-snapshots). Mode `raw-data` already uses the parallel `data.FindUsedBlobs`.
-Impact [S]: total tree loads = snapshots × trees per snapshot, executed serially, each with one
-backend/cache read plus decryption and optional decompression plus JSON decode.
-Impact [A]: the resulting wall time and its share of total runtime are unmeasured here; per-tree cost
-on remote backends is assumed to be round-trip dominated.
+[S] Node-walking modes are `restore-size` (default), `files-by-contents`, and `blobs-per-file`.
+[S] `raw-data` already uses parallel `data.FindUsedBlobs` and is outside this proposed traversal correction.
+[S] Total loads follow visited tree occurrences, not a fixed trees-per-snapshot product for arbitrary inputs.
+[S] Metadata caching can avoid or coalesce remote downloads; cached loads still involve local blob processing.
+[A] Current wall time and the loading stage's share of total runtime are unmeasured.
+Review correspondence: P14 was dismissed as an actionable parallelization recommendation, not invalidated as a serial source mechanism.
 
 ## Evidence
 
-- [S] `cmd/restic/cmd_stats.go:151-156` — the snapshot loop calls `statsWalkSnapshot` serially.
-- [S] `cmd/restic/cmd_stats.go:238` — `statsWalkSnapshot` walks each snapshot with `walker.Walk`.
-- [S] `internal/walker/walker.go:88-98` — each directory is entered by loading exactly one subtree and
-  recursing immediately; no lookahead and no skip set exist.
-- [S] `internal/data/tree.go:145-151` — `LoadTree` performs one `LoadBlob` (backend/cache read,
-  decryption, optional decompression) plus a JSON decode.
-- [S] `cmd/restic/cmd_stats.go:234` — `raw-data` delegates to `data.FindUsedBlobs`.
-- [S] `internal/data/tree_stream.go:204` — `StreamTrees` already runs `Connections()+GOMAXPROCS+1`
-  tree-load workers and takes a `skip` predicate.
-- [S] `internal/data/find.go:15-23` — `FindUsedBlobs` skips already-referenced trees, which is why
-  `prune` processes each tree part once while `stats` does not.
-- [A] Per-tree latency on remote backends is dominated by the backend round trip; unmeasured.
+- [S] `cmd/restic/cmd_stats.go:151-156`: the snapshot loop invokes `statsWalkSnapshot` serially.
+- [S] `cmd/restic/cmd_stats.go:237-250`: per-snapshot hardlink state, ordered node processing, and fatal traversal errors.
+- [S] `internal/walker/walker.go:88-98`: directory traversal loads a subtree before visiting its descendants.
+- [S] `internal/data/tree.go:145-151`: tree loading performs blob processing and creates a single-use iterator.
+- [S] `cmd/restic/cmd_stats.go:234`: `raw-data` delegates to `data.FindUsedBlobs`.
+- [S] `internal/backend/cache/backend.go:49-55,94-106,153-195`: metadata caching and coalesced pack downloads.
+- [S] `internal/data/tree_stream.go:128,187-230`: bounded workers include a single-worker path for trees over 50 MiB.
+- [S] `internal/data/find.go:15-23`: unique-tree skipping is valid for blob reachability, not automatically for stats counters.
 
 ## Prior-Art
 
-Coverage: issues(open+closed), PRs(open+closed+merged), commit history of the touched files;
-checked=2026-10-02. Gaps: none; keyword-searching `recover`, `rewrite`, `parallel tree loading` and
-`stats slow walk tree` returned only unrelated findings.
+Recorded coverage: upstream issues, pull requests, and touched-file history checked on 2026-10-02.
+The earlier claim of no relevant search result contradicted the matching stats thread below.
+Gaps: lexical coverage is not exhaustive, and historical reports do not establish the current loading-cost share.
 
-- `https://github.com/restic/restic/issues/2126` — Related/Duplicate; open with labels
-  `category: stats` and `category: optimization`. Maintainer comment 2022-08-20 states the same root
-  cause ("has to walk the whole tree for each snapshot") and names `StreamTrees` as the direction.
-  Two reporters document `restore-size` runtimes of 81–131 minutes on large repositories; a third
-  reports high CPU and memory usage instead of a runtime.
-- `https://github.com/restic/restic/issues/693` — Related; proposes reading per-snapshot size metadata
-  instead of walking trees. Different root cause.
-- `https://github.com/restic/restic/issues/1470` — Related precedent; serial prune traversal was
-  parallelized upstream.
+- Related/Duplicate: https://github.com/restic/restic/issues/2126 owns slow stats traversal.
+  A maintainer comment dated 2022-08-20 names walking each snapshot and `StreamTrees`.
+  Recorded reports include 81–131 minute `restore-size` runs and a separate CPU/memory report.
+  These reports predate the current traversal and are not measurements of this checkout.
+- Related: https://github.com/restic/restic/issues/693 proposes per-snapshot size metadata rather than tree walking.
+- Related precedent: https://github.com/restic/restic/issues/1470 concerns parallel prune traversal.
 
-Contribution fit: `https://github.com/restic/restic/issues/2126` — comment adding mechanism evidence
-(the anchors above), the constraint that `StreamTrees` carries no node path for `blobs-per-file`, and
-the warning that merging per-worker containers is not equivalent for the unique-file counters.
+Contribution fit remains a possible comment on the existing stats thread, not a selected publication target.
 
 ## Proposed-Change
 
-Give the stats traversal a parallel tree-loading stage without changing visit order or counting
-semantics: either bounded subtree prefetching inside `walker.Walk`, or a `StreamTrees`-based traversal
-for the modes that do not need node paths combined with a mutex-shared statistics container.
+Defer parallelization until a current profile shows a material loading-stage bottleneck.
+If justified, consider bounded prefetch with serial visitation rather than assuming a shared mutex preserves semantics.
+Do not skip snapshot tree occurrences merely because unique-tree skipping is safe for blob reachability.
 
 ## Scope-and-Constraints
 
-- Preserve: output of all four modes, progress counter semantics (`statsui.Progress` is mutex
-  protected; `ProcessSnapshot` resets per-snapshot counters), and non-fatal reporting for unreadable
-  trees.
-- Exclude: snapshot metadata, repository format, and `StreamTrees`/`walker` signature changes that
-  would affect `prune`, `copy`, `ls`, `find`, or `dump`.
-- Cost: `walker.Walk` is shared with `ls`, `find`, and `dump`, which require ordered progressive
-  output; a prefetch stage must not reorder visits or delay node callbacks.
+- Preserve all four modes, per-snapshot hardlink state, global unique-file state, and visit order.
+- Preserve fatal traversal errors; unreadable trees are not generally non-fatal in this command.
+- Preserve progress reset and counting semantics.
+- Any later prefetch design must bound bytes, handle huge trees, cancel and drain workers, and retain error precedence.
+- Exclude snapshot metadata and repository-format changes.
+- Do not alter shared walker callers such as `ls`, `find`, and `dump` without resolving their ordered-output contracts.
 
 ## Verification
 
-- `go build ./... && go test ./cmd/restic ./internal/walker ./internal/data` → build and existing
-  tests pass.
-- `restic stats --json` for `restore-size`, `files-by-contents`, `blobs-per-file`, and `raw-data` on
-  one fixture repository → identical field values before and after.
-- `time restic stats --mode restore-size` on a multi-snapshot fixture → recorded wall time before and
-  after.
+Planned, not run: profile default stats on a representative multi-snapshot repository with cache state recorded.
+Separate index loading, cache/backend work, decryption/decompression, decoding, and node-counter processing.
+Only an authorized correction would require focused affected tests and CLI output comparisons across all four modes.
+No new test or source implementation is part of this ledger update.
 
 ## Publication-Blockers
 
-- No measurement of current and proposed wall time on a representative multi-snapshot repository.
-- No maintainer decision on the acceptable traversal change (`walker.Walk` prefetch versus
-  `StreamTrees` per mode).
-- Authorized-Work and Publication-Target not selected.
+- No current representative profile proving material tree-load cost.
+- No complete prefetch memory, cancellation, ordering, or error contract.
+- Historical timing reports do not close these gaps.
+- Authorized-Work and Publication-Target are not selected.
 
 ## Next-Action
 
 Summary: Measure stats tree-load cost
-Action: Run `restic stats` per mode on a fixture repository with many snapshots and record tree loads
-and wall time.
-Done-When: the exact commands, environment, load counts, and timings are recorded in Evidence.
+Action: Profile default stats on a representative multi-snapshot repository with its cache state recorded.
+Done-When: command, environment, visited trees, stage timings, and cache/backend activity are recorded.
