@@ -7,7 +7,7 @@ This file owns `Next finding ID` and projects current issue-file state.
 `Next-Action` is the `Next-Action/Summary` projection from the issue record.
 When a row disagrees with its issue file, correct the row from the issue file in the same task.
 
-Next finding ID: ISSUE-016
+Next finding ID: ISSUE-022
 
 ## Open-Findings
 
@@ -28,6 +28,12 @@ Next finding ID: ISSUE-016
 | [ISSUE-013](issues/ISSUE-013.md) | internal/backend: failed RoundTrip retains its watchdog until later cancellation | Investigating | Not-Selected | Not-Selected | Medium | Reproduce watchdog failure retention | Not published. |
 | [ISSUE-014](issues/ISSUE-014.md) | internal/fuse: snapshot name collisions restart suffix search from one | Investigating | Not-Selected | Not-Selected | Low | Measure FUSE suffix collisions | Not published. |
 | [ISSUE-015](issues/ISSUE-015.md) | internal/repository/index: incremental reload decodes known index files before skipping them | Investigating | Not-Selected | Not-Selected | Medium | Count incremental index reloads | Not published. |
+| [ISSUE-016](issues/ISSUE-016.md) | internal/restorer: failed subtree reads allow deletion of existing target files | Investigating | Not-Selected | Not-Selected | High | Check deletion-failure prior art | Not published. |
+| [ISSUE-017](issues/ISSUE-017.md) | internal/restorer: recursive deletion removes excluded descendants | Investigating | Not-Selected | Not-Selected | High | Check filtered-deletion prior art | Not published. |
+| [ISSUE-018](issues/ISSUE-018.md) | internal/restorer: replacing hardlinked targets invalidates matching blob reuse | Investigating | Not-Selected | Not-Selected | High | Check replacement-corruption prior art | Not published. |
+| [ISSUE-019](issues/ISSUE-019.md) | internal/restorer: skipped files become sources for missing hardlink members | Investigating | Not-Selected | Not-Selected | High | Check skipped-hardlink prior art | Not published. |
+| [ISSUE-020](issues/ISSUE-020.md) | cmd/restic: tag persistence failures return a successful exit status | Investigating | Not-Selected | Not-Selected | High | Check tag-failure prior art | Not published. |
+| [ISSUE-021](issues/ISSUE-021.md) | internal/restorer: opening existing FIFOs blocks regular-file restoration | Investigating | Not-Selected | Not-Selected | Medium | Check FIFO-restore prior art | Not published. |
 
 ## Archived-Findings
 
