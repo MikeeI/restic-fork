@@ -20,6 +20,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -70,7 +71,8 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	url := fmt.Sprintf("https://%s.blob.%s/%s", cfg.AccountName, endpointSuffix, cfg.Container)
 	opts := &azContainer.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
-			Transport: &http.Client{Transport: rt},
+			Transport:        &http.Client{Transport: rt},
+			PerRetryPolicies: []policy.Policy{uploadPolicy{}},
 		},
 	}
 
