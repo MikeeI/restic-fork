@@ -1,9 +1,9 @@
 # ISSUE-006 — internal/filter: multiple double wildcards expand before a failing literal tail check
 
-State: PR-Ready
+State: Submitted
 Authorized-Work: Pull-Request-Implementation
 Publication-Target: New-pull-request
-External-Reference: Not published.
+External-Reference: https://github.com/restic/restic/pull/22101
 Contribution-Priority: High
 Root-Cause-Confidence: High
 Finding-Category: Performance
@@ -59,7 +59,7 @@ Do not apply the full-match rejection to possible descendants.
 - Present-tail and nonsimple-tail cases are not claimed to gain the negative-case speedup.
 - Exclude collapsing wildcards, changing validation, or replacing the glob engine.
 - Test decision: none; existing tests and disposable differential/CLI checks were used without permanent new tests.
-- Rename the descriptive changelog file to the PR number after publication assigns one.
+- Keep the PR-numbered changelog entry and its published URL aligned with this finding.
 
 ## Verification
 
@@ -77,24 +77,26 @@ Do not apply the full-match rejection to possible descendants.
 
 ## Publication-Blockers
 
-- Exact current draft and `restic/restic:master` target require the user's approval before external publication.
+None.
 
 ## Next-Action
 
-Summary: Approve filter PR publication
-Action: Show the exact draft below and obtain approval for its recorded upstream target.
-Done-When: the user approves the current title, body, base, and fork head; then publish and record the PR URL.
+Summary: Monitor filter PR review
+Action: Inspect CI and maintainer feedback on https://github.com/restic/restic/pull/22101 before proposing a scoped follow-up.
+Done-When: review or CI feedback is recorded and any necessary next action is evidence-backed.
 
 ## Pull-Request-Implementation
 
 Branch: `fix/filter-literal-tail`
 Base: `upstream/master@5127c4abf921857fde4ae51f566c86028c8c2911`
 Scope: add the safe negative-tail guard without changing other glob or descendant semantics; add the changelog.
-Commit: `974756cee184820b71534fd66edf67d3074c9833`
+Commit: `981f8ae06f06e4bd488ca883e6febf533cb4f70a`; implementation `974756cee184820b71534fd66edf67d3074c9833`.
 Push: `MikeeI/restic-fork:fix/filter-literal-tail` pushed successfully.
 Checks:
 - Existing filter/race tests, 60,000-case differential validation, and actual backup/restore/check scenarios passed.
-- Contribution diff contains `internal/filter/filter.go` and `changelog/unreleased/filter-literal-tail` only.
+- Contribution diff contains `internal/filter/filter.go` and `changelog/unreleased/pull-22101` only.
+- Published title/body match the approved text; master base, final head, and enabled maintainer edits were verified.
+- GitHub CI rollup was PENDING after the changelog-only head update; no successful upstream CI result is claimed.
 
 ## Publication-Draft
 
@@ -139,3 +141,9 @@ My intent is to help without wasting maintainer time or energy or discouraging t
 
 Thank you for your work.
 ```
+
+## Submitted-Text
+
+Published: https://github.com/restic/restic/pull/22101
+The approved title and body in `Publication-Draft` were submitted unchanged on 2026-10-05.
+`Publication-Draft` preserves the immutable submitted snapshot, not a pending revision.

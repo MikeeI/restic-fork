@@ -1,9 +1,9 @@
 # ISSUE-005 — internal/backend/azure: single uploads allocate an additional full payload buffer
 
-State: PR-Ready
+State: Submitted
 Authorized-Work: Pull-Request-Implementation
 Publication-Target: New-pull-request
-External-Reference: Not published.
+External-Reference: https://github.com/restic/restic/pull/22102
 Contribution-Priority: High
 Root-Cause-Confidence: High
 Finding-Category: Performance
@@ -72,7 +72,7 @@ Retire native `GetBody` readers before rewinding; reject late reads and late rew
 - Multipart buffer reuse is protected by the same lifecycle policy; its upload strategy and block sizes remain unchanged.
 - Exclude new buffering settings, SDK upgrades, removing the hash pass, or changes to the access-tier contract.
 - Test decision: none; existing tests plus disposable public-boundary checks were used without permanent new tests.
-- Rename the descriptive changelog file to the PR number after publication assigns one.
+- Keep the PR-numbered changelog entry and its published URL aligned with this finding.
 
 ## Verification
 
@@ -93,24 +93,26 @@ Retire native `GetBody` readers before rewinding; reject late reads and late rew
 
 ## Publication-Blockers
 
-- Exact current draft and `restic/restic:master` target require the user's approval before external publication.
+None.
 
 ## Next-Action
 
-Summary: Approve Azure PR publication
-Action: Show the exact draft below and obtain approval for its recorded upstream target.
-Done-When: the user approves the current title, body, base, and fork head; then publish and record the PR URL.
+Summary: Monitor Azure PR review
+Action: Inspect CI and maintainer feedback on https://github.com/restic/restic/pull/22102 before proposing a scoped follow-up.
+Done-When: review or CI feedback is recorded and any necessary next action is evidence-backed.
 
 ## Pull-Request-Implementation
 
 Branch: `fix/azure-single-upload-buffer`
 Base: `upstream/master@5127c4abf921857fde4ae51f566c86028c8c2911`
 Scope: stream eligible single-upload inputs with compatible fallback and safe per-attempt HTTP reader retirement.
-Commit: `93b66eac4f3647834d500cfef38fb0bdc2ba2cd0`; initial optimization `7e77f6760f3d016779b5bc261aa3c13b151f5aaf`.
+Commit: `ed18f97542a80e71cd06c1dbfa32ba02b94a7c19`; implementation `93b66eac4f3647834d500cfef38fb0bdc2ba2cd0`; initial optimization `7e77f6760f3d016779b5bc261aa3c13b151f5aaf`.
 Push: `MikeeI/restic-fork:fix/azure-single-upload-buffer` pushed successfully.
 Checks:
 - Existing Azure race tests, emulator-backed lifecycle/native-retry/multipart checks, and final aggregate CLI race tests passed.
-- Contribution diff contains `azure.go`, `upload-policy.go`, and `changelog/unreleased/azure-single-upload-buffer` only.
+- Contribution diff contains `azure.go`, `upload-policy.go`, and `changelog/unreleased/pull-22102` only.
+- Published title/body match the approved text; master base, final head, and enabled maintainer edits were verified.
+- GitHub CI rollup was PENDING after the changelog-only head update; no successful upstream CI result is claimed.
 
 ## Publication-Draft
 
@@ -157,3 +159,9 @@ My intent is to help without wasting maintainer time or energy or discouraging t
 
 Thank you for your work.
 ```
+
+## Submitted-Text
+
+Published: https://github.com/restic/restic/pull/22102
+The approved title and body in `Publication-Draft` were submitted unchanged on 2026-10-05.
+`Publication-Draft` preserves the immutable submitted snapshot, not a pending revision.

@@ -1,9 +1,9 @@
 # ISSUE-004 — internal/repository: CopyBlobs scans the full index for disabled debug output
 
-State: PR-Ready
+State: Submitted
 Authorized-Work: Pull-Request-Implementation
 Publication-Target: New-pull-request
-External-Reference: Not published.
+External-Reference: https://github.com/restic/restic/pull/22103
 Contribution-Priority: High
 Root-Cause-Confidence: High
 Finding-Category: Performance
@@ -56,7 +56,7 @@ Retain concrete set counts, required statistics, batching, and prune integrity c
 - Preserve selected blobs, pack processing, cancellation, progress, and copied snapshot contents.
 - Exclude generic lazy logging, associated-set redesign, and claims of eliminating all index scans.
 - Test decision: none; existing tests and a disposable benchmark cover the change without permanent new tests.
-- Rename the descriptive changelog file to the PR number after publication assigns one.
+- Keep the PR-numbered changelog entry and its published URL aligned with this finding.
 
 ## Verification
 
@@ -71,24 +71,26 @@ Retain concrete set counts, required statistics, batching, and prune integrity c
 
 ## Publication-Blockers
 
-- Exact current draft and `restic/restic:master` target require the user's approval before external publication.
+None.
 
 ## Next-Action
 
-Summary: Approve copy PR publication
-Action: Show the exact draft below and obtain approval for its recorded upstream target.
-Done-When: the user approves the current title, body, base, and fork head; then publish and record the PR URL.
+Summary: Monitor copy PR review
+Action: Inspect CI and maintainer feedback on https://github.com/restic/restic/pull/22103 before proposing a scoped follow-up.
+Done-When: review or CI feedback is recorded and any necessary next action is evidence-backed.
 
 ## Pull-Request-Implementation
 
 Branch: `fix/copy-debug-index-scan`
 Base: `upstream/master@5127c4abf921857fde4ae51f566c86028c8c2911`
 Scope: remove the debug-only count and private interface requirement; add the user-facing changelog.
-Commit: `e779259705fc1ab1afa436c329e61621d56e9fd4`
+Commit: `3a1b4b1d546be320a74b9141fa03b993aebd8872`; implementation `e779259705fc1ab1afa436c329e61621d56e9fd4`.
 Push: `MikeeI/restic-fork:fix/copy-debug-index-scan` pushed successfully.
 Checks:
 - Focused copy, repack, and prune tests passed; race and aggregate permission-sensitive checks passed as described above.
-- Contribution diff contains `internal/repository/repack.go` and `changelog/unreleased/copy-debug-index-scan` only.
+- Contribution diff contains `internal/repository/repack.go` and `changelog/unreleased/pull-22103` only.
+- Published title/body match the approved text; master base, final head, and enabled maintainer edits were verified.
+- GitHub CI rollup was PENDING after the changelog-only head update; no successful upstream CI result is claimed.
 
 ## Publication-Draft
 
@@ -132,3 +134,9 @@ My intent is to help without wasting maintainer time or energy or discouraging t
 
 Thank you for your work.
 ```
+
+## Submitted-Text
+
+Published: https://github.com/restic/restic/pull/22103
+The approved title and body in `Publication-Draft` were submitted unchanged on 2026-10-05.
+`Publication-Draft` preserves the immutable submitted snapshot, not a pending revision.
