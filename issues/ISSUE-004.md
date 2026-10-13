@@ -8,7 +8,7 @@ Contribution-Priority: High
 Root-Cause-Confidence: High
 Finding-Category: Performance
 Created: 2026-10-02
-Updated: 2026-10-05
+Updated: 2026-10-13
 Source: `upstream/master@5127c4abf921857fde4ae51f566c86028c8c2911`
 
 ## Root-Cause
@@ -56,7 +56,7 @@ Retain concrete set counts, required statistics, batching, and prune integrity c
 - Preserve selected blobs, pack processing, cancellation, progress, and copied snapshot contents.
 - Exclude generic lazy logging, associated-set redesign, and claims of eliminating all index scans.
 - Test decision: none; existing tests and a disposable benchmark cover the change without permanent new tests.
-- Keep the PR-numbered changelog entry and its published URL aligned with this finding.
+- Omit the changelog entry as requested by the maintainer; retain the code optimization.
 
 ## Verification
 
@@ -67,7 +67,7 @@ Retain concrete set counts, required statistics, batching, and prune integrity c
 - [O] Aggregate `go test ./...` covered all packages but failed root-dependent permission fixtures in CLI and archiver.
 - [O] Both complete affected package test binaries passed as UID/GID 65534; the final aggregate CLI race binary also passed.
 - [O] Independent GPT-6.1 Sol xhigh review found no remaining correctness blocker.
-- [O] Disposable benchmark files were removed; contribution diff contains only source and changelog changes.
+- [O] Disposable benchmark files were removed; the final contribution diff contains only `internal/repository/repack.go`.
 
 ## Publication-Blockers
 
@@ -83,12 +83,12 @@ Done-When: review or CI feedback is recorded and any necessary next action is ev
 
 Branch: `fix/copy-debug-index-scan`
 Base: `upstream/master@5127c4abf921857fde4ae51f566c86028c8c2911`
-Scope: remove the debug-only count and private interface requirement; add the user-facing changelog.
-Commit: `3a1b4b1d546be320a74b9141fa03b993aebd8872`; implementation `e779259705fc1ab1afa436c329e61621d56e9fd4`.
+Scope: remove the debug-only count and private interface requirement; omit the changelog at the maintainer's request.
+Commit: `63f78d73e329556dfff8f86655c760b956a22698`; implementation `e779259705fc1ab1afa436c329e61621d56e9fd4`.
 Push: `MikeeI/restic-fork:fix/copy-debug-index-scan` pushed successfully.
 Checks:
 - Focused copy, repack, and prune tests passed; race and aggregate permission-sensitive checks passed as described above.
-- Contribution diff contains `internal/repository/repack.go` and `changelog/unreleased/pull-22103` only.
+- Final GitHub PR diff contains `internal/repository/repack.go` only; the follow-up commit deletes only the changelog.
 - Published title/body match the approved text; master base, final head, and enabled maintainer edits were verified.
 - GitHub CI rollup was PENDING after the changelog-only head update; no successful upstream CI result is claimed.
 
@@ -140,3 +140,13 @@ Thank you for your work.
 Published: https://github.com/restic/restic/pull/22103
 The approved title and body in `Publication-Draft` were submitted unchanged on 2026-10-05.
 `Publication-Draft` preserves the immutable submitted snapshot, not a pending revision.
+
+### Review Follow-Up
+
+- [O] Maintainer requested removal of the changelog: https://github.com/restic/restic/pull/22103#pullrequestreview-5483939744.
+- [O] Changelog deletion was committed and pushed on 2026-10-13; no source code changed in this follow-up.
+- [O] PR checklist now reads: `- [ ] Added a changelog entry; not applicable, removed as requested.`
+- [O] Published reply: `Removed the changelog entry as requested.`
+- Reply URL: https://github.com/restic/restic/pull/22103#issuecomment-6152431794.
+- Verification: GitHub reports head `63f78d73e329556dfff8f86655c760b956a22698` and only the source file in the PR diff.
+- Test decision: none; deleting a release note changes no runtime behavior.
