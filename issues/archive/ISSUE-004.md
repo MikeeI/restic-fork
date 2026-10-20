@@ -1,6 +1,6 @@
 # ISSUE-004 — internal/repository: CopyBlobs scans the full index for disabled debug output
 
-State: Submitted
+State: Archived
 Authorized-Work: Pull-Request-Implementation
 Publication-Target: New-pull-request
 External-Reference: https://github.com/restic/restic/pull/22103
@@ -8,7 +8,7 @@ Contribution-Priority: High
 Root-Cause-Confidence: High
 Finding-Category: Performance
 Created: 2026-10-02
-Updated: 2026-10-13
+Updated: 2026-10-20
 Source: `upstream/master@5127c4abf921857fde4ae51f566c86028c8c2911`
 
 ## Root-Cause
@@ -75,9 +75,9 @@ None.
 
 ## Next-Action
 
-Summary: Monitor copy PR review
-Action: Inspect CI and maintainer feedback on https://github.com/restic/restic/pull/22103 before proposing a scoped follow-up.
-Done-When: review or CI feedback is recorded and any necessary next action is evidence-backed.
+Summary: —
+Action: None.
+Done-When: None.
 
 ## Pull-Request-Implementation
 
@@ -150,3 +150,16 @@ The approved title and body in `Publication-Draft` were submitted unchanged on 2
 - Reply URL: https://github.com/restic/restic/pull/22103#issuecomment-6152431794.
 - Verification: GitHub reports head `63f78d73e329556dfff8f86655c760b956a22698` and only the source file in the PR diff.
 - Test decision: none; deleting a release note changes no runtime behavior.
+
+### Merge
+
+- [O] Maintainer approved with `LGTM. Thanks!` on 2026-10-17.
+- [O] Maintainer rebased the branch to pick up CI fixes; the final PR head is `67906774b4254bb00f7a57b034e35cf78487441d`.
+- [O] MichaelEischer merged the PR on 2026-10-18 as `adc0284113112935a95f088e6777a59921fdbae1` on `upstream/master`.
+
+## Archive
+
+Archive-Reason: Merged
+Detail: None.
+Evidence: https://github.com/restic/restic/pull/22103 merged as `adc0284113112935a95f088e6777a59921fdbae1`.
+Checked: 2026-10-20
